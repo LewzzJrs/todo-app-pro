@@ -9,14 +9,20 @@
 
 <body class="bg-slate-950 text-slate-100 flex justify-center pt-12 min-h-screen font-sans">
   <main class="w-full max-w-md bg-slate-900 p-6 rounded-xl border border-slate-800 shadow-2xl h-fit">
-    <header class="mb-6 text-center">
+    <header class="mb-6 flex items-center justify-between">
       <h1 class="text-3xl font-bold text-white tracking-tight">ToDo List</h1>
+      <button type="button" id="clear-all-btn" title="Hapus semua tugas"
+        class="px-3 py-1.5 text-sm font-semibold rounded-lg bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white border border-slate-700 transition-colors">
+        Hapus Semua
+      </button>
     </header>
 
     <section class="mb-6">
-      <form id="todo-form" class="flex gap-2">
+      <form id="todo-form" class="flex flex-col gap-2">
         <input type="text" id="todo-input" placeholder="Ketik tugas barumu disini..."
           class="flex-1 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-slate-400" />
+        <input type="date" id="todo-date-input" title="Tanggal (opsional)"
+          class="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-slate-400 scheme-dark" />
         <button type="submit"
           class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"> Tambah
         </button>
