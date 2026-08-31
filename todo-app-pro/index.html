@@ -15,46 +15,53 @@
   <meta property="og:type" content="website" />
 </head>
 
-<body class="bg-slate-950 text-slate-100 flex justify-center pt-12 min-h-screen font-sans">
-  <main class="w-full max-w-md bg-slate-900 p-6 rounded-xl border border-slate-800 shadow-2xl h-fit">
-    <header class="mb-6 flex items-center justify-between">
-      <h1 class="text-3xl font-bold text-white tracking-tight">ToDo List</h1>
-      <button type="button" id="clear-all-btn" title="Hapus semua tugas"
-        class="px-3 py-1.5 text-sm font-semibold rounded-lg bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white border border-slate-700 transition-colors">
-        Hapus Semua
-      </button>
-    </header>
+<body class="bg-slate-950 text-slate-100 flex justify-center pt-12 min-h-screen font-sans px-4">
+  <div class="w-full max-w-3xl flex flex-col md:flex-row gap-4 items-start">
+    <aside class="w-full md:w-56 md:shrink-0 bg-slate-900 p-3 md:p-4 rounded-xl border border-slate-800 shadow-2xl">
+      <h2 class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2 px-1">Riwayat</h2>
+      <div id="month-list" class="flex md:flex-col gap-1 overflow-x-auto md:overflow-visible pb-1 md:pb-0"></div>
+    </aside>
 
-    <section class="mb-6">
-      <form id="todo-form" class="flex flex-col gap-2">
-        <input type="text" id="todo-input" placeholder="Ketik tugas barumu disini..."
-          class="flex-1 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-slate-400" />
-        <input type="date" id="todo-date-input" title="Tanggal (opsional)"
-          class="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-slate-400 scheme-dark" />
-        <button type="submit"
-          class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"> Tambah
+    <main class="w-full max-w-md mx-auto md:mx-0 bg-slate-900 p-6 rounded-xl border border-slate-800 shadow-2xl h-fit">
+      <header class="mb-6 flex items-center justify-between">
+        <h1 class="text-3xl font-bold text-white tracking-tight">ToDo List</h1>
+        <button type="button" id="clear-all-btn" title="Hapus semua tugas"
+          class="px-3 py-1.5 text-sm font-semibold rounded-lg bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white border border-slate-700 transition-colors">
+          Hapus Semua
         </button>
-      </form>
-    </section>
+      </header>
 
-    <section class="mb-4 flex items-center justify-between text-sm">
-      <div id="filter-tabs" class="flex gap-1 bg-slate-800 p-1 rounded-lg border border-slate-700">
-        <button type="button" data-filter="all"
-          class="filter-btn px-3 py-1 rounded-md font-medium transition-colors">Semua</button>
-        <button type="button" data-filter="active"
-          class="filter-btn px-3 py-1 rounded-md font-medium transition-colors">Aktif</button>
-        <button type="button" data-filter="completed"
-          class="filter-btn px-3 py-1 rounded-md font-medium transition-colors">Selesai</button>
-      </div>
-      <span id="todo-counter" class="text-slate-400"></span>
-    </section>
+      <section class="mb-6">
+        <form id="todo-form" class="flex flex-col gap-2">
+          <input type="text" id="todo-input" placeholder="Ketik tugas barumu disini..."
+            class="flex-1 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-slate-400" />
+          <input type="date" id="todo-date-input" title="Tanggal (opsional)"
+            class="px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-slate-400 scheme-dark" />
+          <button type="submit"
+            class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"> Tambah
+          </button>
+        </form>
+      </section>
 
-    <section>
-      <ul id="todo-list" class="space-y-3">
+      <section class="mb-4 flex items-center justify-between text-sm">
+        <div id="filter-tabs" class="flex gap-1 bg-slate-800 p-1 rounded-lg border border-slate-700">
+          <button type="button" data-filter="all"
+            class="filter-btn px-3 py-1 rounded-md font-medium transition-colors">Semua</button>
+          <button type="button" data-filter="active"
+            class="filter-btn px-3 py-1 rounded-md font-medium transition-colors">Aktif</button>
+          <button type="button" data-filter="completed"
+            class="filter-btn px-3 py-1 rounded-md font-medium transition-colors">Selesai</button>
+        </div>
+        <span id="todo-counter" class="text-slate-400"></span>
+      </section>
 
-      </ul>
-    </section>
-  </main>
+      <section>
+        <ul id="todo-list" class="space-y-3">
+
+        </ul>
+      </section>
+    </main>
+  </div>
 
   <div id="toast-container" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-[calc(100%-2rem)] max-w-sm">
   </div>

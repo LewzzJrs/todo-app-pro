@@ -36,6 +36,21 @@ const NAMA_HARI = [
   'Sabtu',
 ];
 
+const NAMA_BULAN = [
+  'Januari',
+  'Februari',
+  'Maret',
+  'April',
+  'Mei',
+  'Juni',
+  'Juli',
+  'Agustus',
+  'September',
+  'Oktober',
+  'November',
+  'Desember',
+];
+
 function formatTanggal(dueDate: string): string {
   const [year, month, day] = dueDate.split('-').map(Number);
   const date = new Date(year, month - 1, day);
@@ -148,6 +163,7 @@ type Filter = 'all' | 'active' | 'completed';
 const app = new TodoList();
 let currentFilter: Filter = 'all';
 let editingId: number | null = null;
+let selectedMonth: string | null = null;
 
 const todoForm = document.getElementById('todo-form') as HTMLFormElement;
 const todoInput = document.getElementById('todo-input') as HTMLInputElement;
@@ -164,6 +180,9 @@ const filterTabs = document.getElementById('filter-tabs') as HTMLDivElement;
 const todoCounter = document.getElementById('todo-counter') as HTMLSpanElement;
 const toastContainer = document.getElementById(
   'toast-container'
+) as HTMLDivElement;
+const monthListElement = document.getElementById(
+  'month-list'
 ) as HTMLDivElement;
 
 const ICON_CHECK =
@@ -259,12 +278,29 @@ function iconButton(
   return btn;
 }
 
+function getMonthsWithCounts(): { key: string; label: string; count: number }[] {
+  const counts = new Map<string, number>();
+  app.getTodos().forEach((todo) => {
+    if (!todo.dueDate) return;
+    const key = todo.dueDate.slice(0, 7);
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  });
+
+  return Array.from(counts.entries())
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([key, count]) => {
+      const [year, month] = key.split('-').map(Number);
+      return { key, label: `${NAMA_BULAN[month - 1]} ${year}`, count };
+    });
+}
+
 function getVisibleTodos(): Todo[] {
   const todos = app.getTodos().slice();
 
   const filtered = todos.filter((todo) => {
-    if (currentFilter === 'active') return !todo.isCompleted;
-    if (currentFilter === 'completed') return todo.isCompleted;
+    if (currentFilter === 'active' && todo.isCompleted) return false;
+    if (currentFilter === 'completed' && !todo.isCompleted) return false;
+    if (selectedMonth && !todo.dueDate?.startsWith(selectedMonth)) return false;
     return true;
   });
 
@@ -286,6 +322,46 @@ function updateFilterTabsUI(): void {
     btn.classList.toggle('text-white', isActive);
     btn.classList.toggle('text-slate-400', !isActive);
     btn.classList.toggle('hover:text-slate-200', !isActive);
+  });
+}
+
+function sidebarBtnClass(isActive: boolean): string {
+  return `text-left px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors shrink-0 ${
+    isActive
+      ? 'bg-blue-600 text-white'
+      : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+  }`;
+}
+
+function renderSidebar(): void {
+  const months = getMonthsWithCounts();
+
+  if (selectedMonth && !months.some((m) => m.key === selectedMonth)) {
+    selectedMonth = null;
+  }
+
+  monthListElement.innerHTML = '';
+
+  const allBtn = document.createElement('button');
+  allBtn.type = 'button';
+  allBtn.textContent = `Semua (${app.getTodos().length})`;
+  allBtn.className = sidebarBtnClass(selectedMonth === null);
+  allBtn.onclick = () => {
+    selectedMonth = null;
+    renderTodos();
+  };
+  monthListElement.appendChild(allBtn);
+
+  months.forEach((month) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = `${month.label} (${month.count})`;
+    btn.className = sidebarBtnClass(selectedMonth === month.key);
+    btn.onclick = () => {
+      selectedMonth = month.key;
+      renderTodos();
+    };
+    monthListElement.appendChild(btn);
   });
 }
 
@@ -447,6 +523,8 @@ function renderTodoRow(li: HTMLLIElement, todo: Todo): void {
 }
 
 function renderTodos(): void {
+  renderSidebar();
+
   todoListElement.innerHTML = '';
   const visibleTodos = getVisibleTodos();
 
@@ -454,12 +532,13 @@ function renderTodos(): void {
   updateCounter();
 
   if (visibleTodos.length === 0) {
-    const emptyMessage =
+    let emptyMessage =
       currentFilter === 'active'
         ? 'Tidak ada tugas aktif. Semua beres!'
         : currentFilter === 'completed'
         ? 'Belum ada tugas yang selesai.'
         : 'Belum ada tugas. Yuk, tambah tugas baru!';
+    if (selectedMonth) emptyMessage = 'Tidak ada tugas di bulan ini.';
     todoListElement.innerHTML = `<li class="text-center text-slate-500 py-4">${emptyMessage}</li>`;
     return;
   }
