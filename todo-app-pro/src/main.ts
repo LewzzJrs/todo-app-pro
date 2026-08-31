@@ -78,9 +78,28 @@ function isOverdue(todo: Todo): boolean {
   );
 }
 
+type HistoryAction = 'completed' | 'deleted';
+
+interface HistoryEntry {
+  id: number;
+  title: string;
+  action: HistoryAction;
+  timestamp: number;
+}
+
+function formatWaktu(timestamp: number): string {
+  const d = new Date(timestamp);
+  const tanggal = String(d.getDate()).padStart(2, '0');
+  const bulan = String(d.getMonth() + 1).padStart(2, '0');
+  const jam = String(d.getHours()).padStart(2, '0');
+  const menit = String(d.getMinutes()).padStart(2, '0');
+  return `${tanggal}/${bulan} ${jam}:${menit}`;
+}
+
 class TodoList {
   private todos: Todo[] = [];
-  private historyMonths: Set<string> = new Set();
+  private availableMonths: Set<string> = new Set();
+  private history: HistoryEntry[] = [];
 
   private saveData(): void {
     localStorage.setItem('tugas_ts', JSON.stringify(this.todos));
@@ -95,31 +114,56 @@ class TodoList {
     return false;
   }
 
-  private saveHistory(): void {
+  private saveMonths(): void {
     localStorage.setItem(
-      'riwayat_bulan',
-      JSON.stringify(Array.from(this.historyMonths))
+      'bulan_tersedia',
+      JSON.stringify(Array.from(this.availableMonths))
     );
   }
 
-  private loadHistory(): void {
-    const dataTersimpan = localStorage.getItem('riwayat_bulan');
+  private loadMonths(): void {
+    const dataTersimpan = localStorage.getItem('bulan_tersedia');
     if (dataTersimpan) {
-      this.historyMonths = new Set(JSON.parse(dataTersimpan));
+      this.availableMonths = new Set(JSON.parse(dataTersimpan));
     }
   }
 
   private registerMonth(dueDate?: string): void {
     if (!dueDate) return;
     const key = dueDate.slice(0, 7);
-    if (!this.historyMonths.has(key)) {
-      this.historyMonths.add(key);
-      this.saveHistory();
+    if (!this.availableMonths.has(key)) {
+      this.availableMonths.add(key);
+      this.saveMonths();
     }
   }
 
-  getHistoryMonths(): string[] {
-    return Array.from(this.historyMonths).sort();
+  getAvailableMonths(): string[] {
+    return Array.from(this.availableMonths).sort();
+  }
+
+  private saveHistoryLog(): void {
+    localStorage.setItem('riwayat_tugas', JSON.stringify(this.history));
+  }
+
+  private loadHistoryLog(): void {
+    const dataTersimpan = localStorage.getItem('riwayat_tugas');
+    if (dataTersimpan) {
+      this.history = JSON.parse(dataTersimpan);
+    }
+  }
+
+  private logHistory(title: string, action: HistoryAction): void {
+    this.history.unshift({
+      id: Date.now() + Math.random(),
+      title,
+      action,
+      timestamp: Date.now(),
+    });
+    this.saveHistoryLog();
+  }
+
+  getHistory(): HistoryEntry[] {
+    return this.history;
   }
 
   private validateTitle(title: string): string {
@@ -153,8 +197,10 @@ class TodoList {
   }
 
   deleteTodo(id: number): void {
+    const todo = this.todos.find((todo) => todo.id === id);
     this.todos = this.todos.filter((todo) => todo.id !== id);
     this.saveData();
+    if (todo) this.logHistory(todo.title, 'deleted');
   }
 
   toggleTodoStatus(id: number): void {
@@ -162,6 +208,7 @@ class TodoList {
     if (todo) {
       todo.isCompleted = !todo.isCompleted;
       this.saveData();
+      if (todo.isCompleted) this.logHistory(todo.title, 'completed');
     }
   }
 
@@ -170,6 +217,7 @@ class TodoList {
   }
 
   clearAll(): void {
+    this.todos.forEach((todo) => this.logHistory(todo.title, 'deleted'));
     this.todos = [];
     localStorage.removeItem('tugas_ts');
   }
@@ -188,7 +236,8 @@ class TodoList {
 
   init(): void {
     this.loadData();
-    this.loadHistory();
+    this.loadMonths();
+    this.loadHistoryLog();
   }
 }
 
@@ -217,6 +266,9 @@ const toastContainer = document.getElementById(
 ) as HTMLDivElement;
 const monthListElement = document.getElementById(
   'month-list'
+) as HTMLDivElement;
+const historyListElement = document.getElementById(
+  'history-list'
 ) as HTMLDivElement;
 
 const ICON_CHECK =
@@ -320,7 +372,7 @@ function getMonthsWithCounts(): { key: string; label: string; count: number }[] 
     counts.set(key, (counts.get(key) ?? 0) + 1);
   });
 
-  return app.getHistoryMonths().map((key) => {
+  return app.getAvailableMonths().map((key) => {
     const [year, month] = key.split('-').map(Number);
     return {
       key,
@@ -394,6 +446,48 @@ function renderSidebar(): void {
       renderTodos();
     };
     monthListElement.appendChild(btn);
+  });
+}
+
+function renderHistory(): void {
+  const entries = app.getHistory();
+  historyListElement.innerHTML = '';
+
+  if (entries.length === 0) {
+    historyListElement.innerHTML =
+      '<p class="text-xs text-slate-600 px-1">Belum ada riwayat.</p>';
+    return;
+  }
+
+  entries.forEach((entry) => {
+    const row = document.createElement('div');
+    row.className = 'flex items-start justify-between gap-2 px-1 py-1 text-xs';
+
+    const left = document.createElement('div');
+    left.className = 'min-w-0';
+
+    const title = document.createElement('p');
+    title.textContent = entry.title;
+    title.className = 'text-slate-300 truncate';
+
+    const time = document.createElement('p');
+    time.textContent = formatWaktu(entry.timestamp);
+    time.className = 'text-slate-600';
+
+    left.appendChild(title);
+    left.appendChild(time);
+
+    const badge = document.createElement('span');
+    badge.textContent = entry.action === 'completed' ? 'Selesai' : 'Dihapus';
+    badge.className = `shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+      entry.action === 'completed'
+        ? 'bg-emerald-500/20 text-emerald-400'
+        : 'bg-rose-500/20 text-rose-400'
+    }`;
+
+    row.appendChild(left);
+    row.appendChild(badge);
+    historyListElement.appendChild(row);
   });
 }
 
@@ -556,6 +650,7 @@ function renderTodoRow(li: HTMLLIElement, todo: Todo): void {
 
 function renderTodos(): void {
   renderSidebar();
+  renderHistory();
 
   todoListElement.innerHTML = '';
   const visibleTodos = getVisibleTodos();
