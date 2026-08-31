@@ -280,6 +280,9 @@ const historyListElement = document.getElementById(
 const clearHistoryBtn = document.getElementById(
   'clear-history-btn'
 ) as HTMLButtonElement;
+const reminderBannerElement = document.getElementById(
+  'reminder-banner'
+) as HTMLDivElement;
 
 const ICON_CHECK =
   '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
@@ -601,6 +604,61 @@ function updateCounter(): void {
     activeCount === 0 ? 'Semua beres' : `${activeCount} tugas tersisa`;
 }
 
+function getDueTodayOrOverdue(): Todo[] {
+  const today = getTodayStr();
+  return app.getTodos().filter((t) => !t.isCompleted && t.dueDate && t.dueDate <= today);
+}
+
+function requestNotificationPermission(): void {
+  if (!('Notification' in window)) return;
+  Notification.requestPermission().then(() => {
+    renderReminderBanner();
+    notifyDueTasks();
+  });
+}
+
+function notifyDueTasks(): void {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const due = getDueTodayOrOverdue();
+  if (due.length === 0) return;
+
+  const titles = due.slice(0, 3).map((t) => t.title).join(', ');
+  new Notification('Jangan lupa tugasmu!', {
+    body: `${due.length} tugas jatuh tempo hari ini/terlambat: ${titles}${
+      due.length > 3 ? ', ...' : ''
+    }`,
+    icon: '/favicon.svg',
+  });
+}
+
+function renderReminderBanner(): void {
+  const due = getDueTodayOrOverdue();
+  reminderBannerElement.innerHTML = '';
+
+  if (due.length === 0) return;
+
+  const box = document.createElement('div');
+  box.className =
+    'mb-6 p-3 rounded-lg border border-amber-800 bg-amber-950/40 flex items-center justify-between gap-3 text-sm';
+
+  const text = document.createElement('span');
+  text.className = 'text-amber-300';
+  text.textContent = `${due.length} tugas jatuh tempo hari ini atau terlambat — jangan lupa!`;
+  box.appendChild(text);
+
+  if ('Notification' in window && Notification.permission === 'default') {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = 'Aktifkan Notifikasi';
+    btn.className =
+      'shrink-0 px-3 py-1 rounded-md text-xs font-semibold bg-amber-600 hover:bg-amber-500 text-white transition-colors';
+    btn.onclick = requestNotificationPermission;
+    box.appendChild(btn);
+  }
+
+  reminderBannerElement.appendChild(box);
+}
+
 function renderEditForm(li: HTMLLIElement, todo: Todo): void {
   li.className =
     'flex flex-col gap-2 bg-slate-800 p-3 rounded-lg border-l-4 border-blue-500 shadow-sm border-y border-r border-slate-700';
@@ -755,6 +813,7 @@ function renderTodoRow(li: HTMLLIElement, todo: Todo): void {
 function renderTodos(): void {
   renderSidebar();
   renderHistory();
+  renderReminderBanner();
 
   todoListElement.innerHTML = '';
   const visibleTodos = getVisibleTodos();
@@ -844,3 +903,4 @@ filterTabs.addEventListener('click', (event: Event) => {
 
 app.init();
 renderTodos();
+notifyDueTasks();
