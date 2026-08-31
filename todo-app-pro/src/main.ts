@@ -169,6 +169,8 @@ class TodoList {
   clearHistory(): void {
     this.history = [];
     localStorage.removeItem('riwayat_tugas');
+    this.availableMonths = new Set();
+    localStorage.removeItem('bulan_tersedia');
   }
 
   private validateTitle(title: string): string {
@@ -815,15 +817,16 @@ clearAllBtn.addEventListener('click', () => {
 });
 
 clearHistoryBtn.addEventListener('click', () => {
-  if (app.getHistory().length === 0) return;
+  if (app.getHistory().length === 0 && app.getAvailableMonths().length === 0) return;
   showTypeConfirmModal({
     title: 'Hapus Riwayat?',
     description:
-      'Semua catatan tugas selesai & dihapus akan hilang permanen dan tidak bisa dikembalikan.',
+      'Semua catatan tugas selesai & dihapus, beserta daftar Filter Bulan, akan hilang permanen dan tidak bisa dikembalikan.',
     confirmPhrase: 'udah selesai',
     confirmLabel: 'Hapus Riwayat',
     onConfirm: () => {
       app.clearHistory();
+      selectedMonth = null;
       renderTodos();
       showToast({ message: 'Riwayat dihapus' });
     },
