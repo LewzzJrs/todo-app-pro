@@ -80,6 +80,7 @@ function isOverdue(todo: Todo): boolean {
 
 class TodoList {
   private todos: Todo[] = [];
+  private historyMonths: Set<string> = new Set();
 
   private saveData(): void {
     localStorage.setItem('tugas_ts', JSON.stringify(this.todos));
@@ -94,6 +95,33 @@ class TodoList {
     return false;
   }
 
+  private saveHistory(): void {
+    localStorage.setItem(
+      'riwayat_bulan',
+      JSON.stringify(Array.from(this.historyMonths))
+    );
+  }
+
+  private loadHistory(): void {
+    const dataTersimpan = localStorage.getItem('riwayat_bulan');
+    if (dataTersimpan) {
+      this.historyMonths = new Set(JSON.parse(dataTersimpan));
+    }
+  }
+
+  private registerMonth(dueDate?: string): void {
+    if (!dueDate) return;
+    const key = dueDate.slice(0, 7);
+    if (!this.historyMonths.has(key)) {
+      this.historyMonths.add(key);
+      this.saveHistory();
+    }
+  }
+
+  getHistoryMonths(): string[] {
+    return Array.from(this.historyMonths).sort();
+  }
+
   private validateTitle(title: string): string {
     if (!title || title.trim() === '') {
       throw new Error('Judul tugas tidak boleh kosong');
@@ -102,14 +130,16 @@ class TodoList {
   }
 
   addTodo(title: string, dueDate?: string): Todo {
+    const normalizedDate = dueDate ? normalizeDate(dueDate) : undefined;
     const newTodo = new Todo(
       Date.now(),
       this.validateTitle(title),
       false,
-      dueDate ? normalizeDate(dueDate) : undefined
+      normalizedDate
     );
     this.todos.push(newTodo);
     this.saveData();
+    this.registerMonth(normalizedDate);
     return newTodo;
   }
 
@@ -119,6 +149,7 @@ class TodoList {
     todo.title = this.validateTitle(title);
     todo.dueDate = dueDate ? normalizeDate(dueDate) : undefined;
     this.saveData();
+    this.registerMonth(todo.dueDate);
   }
 
   deleteTodo(id: number): void {
@@ -146,15 +177,18 @@ class TodoList {
   restoreTodo(todo: Todo): void {
     this.todos.push(todo);
     this.saveData();
+    this.registerMonth(todo.dueDate);
   }
 
   restoreAll(todos: Todo[]): void {
     this.todos = todos;
     this.saveData();
+    todos.forEach((todo) => this.registerMonth(todo.dueDate));
   }
 
   init(): void {
     this.loadData();
+    this.loadHistory();
   }
 }
 
@@ -286,12 +320,14 @@ function getMonthsWithCounts(): { key: string; label: string; count: number }[] 
     counts.set(key, (counts.get(key) ?? 0) + 1);
   });
 
-  return Array.from(counts.entries())
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([key, count]) => {
-      const [year, month] = key.split('-').map(Number);
-      return { key, label: `${NAMA_BULAN[month - 1]} ${year}`, count };
-    });
+  return app.getHistoryMonths().map((key) => {
+    const [year, month] = key.split('-').map(Number);
+    return {
+      key,
+      label: `${NAMA_BULAN[month - 1]} ${year}`,
+      count: counts.get(key) ?? 0,
+    };
+  });
 }
 
 function getVisibleTodos(): Todo[] {
@@ -335,10 +371,6 @@ function sidebarBtnClass(isActive: boolean): string {
 
 function renderSidebar(): void {
   const months = getMonthsWithCounts();
-
-  if (selectedMonth && !months.some((m) => m.key === selectedMonth)) {
-    selectedMonth = null;
-  }
 
   monthListElement.innerHTML = '';
 
