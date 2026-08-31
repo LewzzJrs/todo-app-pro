@@ -274,6 +274,9 @@ const toastContainer = document.getElementById(
 const monthListElement = document.getElementById(
   'month-list'
 ) as HTMLDivElement;
+const miniCalendarElement = document.getElementById(
+  'mini-calendar'
+) as HTMLDivElement;
 const historyListElement = document.getElementById(
   'history-list'
 ) as HTMLDivElement;
@@ -556,6 +559,66 @@ function renderSidebar(): void {
   });
 }
 
+function pad2(n: number): string {
+  return String(n).padStart(2, '0');
+}
+
+function renderMiniCalendar(): void {
+  let year = new Date().getFullYear();
+  let month = new Date().getMonth();
+
+  if (selectedMonth) {
+    const [y, m] = selectedMonth.split('-').map(Number);
+    year = y;
+    month = m - 1;
+  }
+
+  const taskDates = new Set(
+    app.getTodos().flatMap((t) => (t.dueDate ? [t.dueDate] : []))
+  );
+  const todayStr = getTodayStr();
+  const firstDayOfWeek = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  miniCalendarElement.innerHTML = '';
+
+  const label = document.createElement('p');
+  label.textContent = `${NAMA_BULAN[month]} ${year}`;
+  label.className = 'text-xs text-slate-400 mb-2 px-1';
+  miniCalendarElement.appendChild(label);
+
+  const grid = document.createElement('div');
+  grid.className = 'grid grid-cols-7 gap-y-1 text-center';
+
+  ['Mg', 'Sn', 'Sl', 'Rb', 'Km', 'Jm', 'Sb'].forEach((d) => {
+    const cell = document.createElement('span');
+    cell.textContent = d;
+    cell.className = 'text-[10px] text-slate-600 font-medium';
+    grid.appendChild(cell);
+  });
+
+  for (let i = 0; i < firstDayOfWeek; i++) {
+    grid.appendChild(document.createElement('span'));
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dateStr = `${year}-${pad2(month + 1)}-${pad2(day)}`;
+    const hasTask = taskDates.has(dateStr);
+    const isToday = dateStr === todayStr;
+
+    const cell = document.createElement('span');
+    cell.textContent = String(day);
+    cell.className = [
+      'text-[11px] py-1 rounded-full mx-auto w-6',
+      hasTask ? 'bg-blue-600 text-white font-semibold' : 'text-slate-400',
+      isToday ? `ring-1 ${hasTask ? 'ring-blue-300' : 'ring-slate-500'}` : '',
+    ].join(' ');
+    grid.appendChild(cell);
+  }
+
+  miniCalendarElement.appendChild(grid);
+}
+
 function renderHistory(): void {
   const entries = app.getHistory();
   historyListElement.innerHTML = '';
@@ -812,6 +875,7 @@ function renderTodoRow(li: HTMLLIElement, todo: Todo): void {
 
 function renderTodos(): void {
   renderSidebar();
+  renderMiniCalendar();
   renderHistory();
   renderReminderBanner();
 
