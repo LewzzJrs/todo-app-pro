@@ -1,10 +1,18 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ToDo</title>
+  <title>ToDo List — Catat & Kelola Tugasmu</title>
+  <meta name="description"
+    content="Aplikasi to-do list simpel untuk mencatat dan mengelola tugas harianmu, lengkap dengan tanggal, filter, dan penanda tugas terlambat." />
+  <meta name="theme-color" content="#020617" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <meta property="og:title" content="ToDo List" />
+  <meta property="og:description"
+    content="Aplikasi to-do list simpel untuk mencatat dan mengelola tugas harianmu." />
+  <meta property="og:type" content="website" />
 </head>
 
 <body class="bg-slate-950 text-slate-100 flex justify-center pt-12 min-h-screen font-sans">
@@ -27,6 +35,18 @@
           class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"> Tambah
         </button>
       </form>
+    </section>
+
+    <section class="mb-4 flex items-center justify-between text-sm">
+      <div id="filter-tabs" class="flex gap-1 bg-slate-800 p-1 rounded-lg border border-slate-700">
+        <button type="button" data-filter="all"
+          class="filter-btn px-3 py-1 rounded-md font-medium transition-colors">Semua</button>
+        <button type="button" data-filter="active"
+          class="filter-btn px-3 py-1 rounded-md font-medium transition-colors">Aktif</button>
+        <button type="button" data-filter="completed"
+          class="filter-btn px-3 py-1 rounded-md font-medium transition-colors">Selesai</button>
+      </div>
+      <span id="todo-counter" class="text-slate-400"></span>
     </section>
 
     <section>
