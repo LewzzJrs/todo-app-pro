@@ -17,7 +17,7 @@
 
 <body class="bg-slate-950 text-slate-100 flex justify-center pt-12 min-h-screen font-sans px-4">
   <div class="w-full max-w-3xl flex flex-col md:flex-row gap-4 items-start">
-    <aside class="w-full md:w-56 md:shrink-0 bg-slate-900 p-3 md:p-4 rounded-xl border border-slate-800 shadow-2xl">
+    <aside class="order-2 md:order-1 w-full md:w-56 md:shrink-0 bg-slate-900 p-3 md:p-4 rounded-xl border border-slate-800 shadow-2xl">
       <h2 class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2 px-1">Filter Bulan</h2>
       <div id="month-list" class="flex md:flex-col gap-1 overflow-x-auto md:overflow-visible pb-1 md:pb-0"></div>
 
@@ -40,7 +40,7 @@
       </div>
     </aside>
 
-    <main class="w-full max-w-md mx-auto md:mx-0 bg-slate-900 p-6 rounded-xl border border-slate-800 shadow-2xl h-fit">
+    <main class="order-1 md:order-2 w-full max-w-md mx-auto md:mx-0 bg-slate-900 p-6 rounded-xl border border-slate-800 shadow-2xl h-fit">
       <header class="mb-6 flex items-center justify-between">
         <h1 class="text-3xl font-bold text-white tracking-tight">ToDo List</h1>
         <button type="button" id="clear-all-btn" title="Hapus semua tugas"
