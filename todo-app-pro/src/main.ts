@@ -128,6 +128,16 @@ class TodoList {
     localStorage.removeItem('tugas_ts');
   }
 
+  restoreTodo(todo: Todo): void {
+    this.todos.push(todo);
+    this.saveData();
+  }
+
+  restoreAll(todos: Todo[]): void {
+    this.todos = todos;
+    this.saveData();
+  }
+
   init(): void {
     this.loadData();
   }
@@ -152,6 +162,9 @@ const clearAllBtn = document.getElementById(
 ) as HTMLButtonElement;
 const filterTabs = document.getElementById('filter-tabs') as HTMLDivElement;
 const todoCounter = document.getElementById('todo-counter') as HTMLSpanElement;
+const toastContainer = document.getElementById(
+  'toast-container'
+) as HTMLDivElement;
 
 const ICON_CHECK =
   '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
@@ -163,6 +176,74 @@ const ICON_EDIT =
   '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>';
 const ICON_CLOSE =
   '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
+const ICON_CLOSE_SM =
+  '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>';
+
+interface ToastOptions {
+  message: string;
+  type?: 'default' | 'error';
+  actionLabel?: string;
+  onAction?: () => void;
+  duration?: number;
+}
+
+function showToast(options: ToastOptions): void {
+  const { message, type = 'default', actionLabel, onAction, duration = 4000 } = options;
+
+  const toast = document.createElement('div');
+  toast.className = `flex items-center justify-between gap-3 px-4 py-3 rounded-lg border shadow-lg text-sm transition-all duration-200 opacity-0 translate-y-2 ${
+    type === 'error'
+      ? 'bg-rose-950 border-rose-800 text-rose-200'
+      : 'bg-slate-800 border-slate-700 text-slate-200'
+  }`;
+
+  const text = document.createElement('span');
+  text.textContent = message;
+  text.className = 'flex-1';
+
+  const controls = document.createElement('div');
+  controls.className = 'flex items-center gap-2 shrink-0';
+
+  let dismissed = false;
+  const dismiss = () => {
+    if (dismissed) return;
+    dismissed = true;
+    clearTimeout(timer);
+    toast.classList.add('opacity-0', 'translate-y-2');
+    setTimeout(() => toast.remove(), 200);
+  };
+
+  if (actionLabel && onAction) {
+    const actionBtn = document.createElement('button');
+    actionBtn.type = 'button';
+    actionBtn.textContent = actionLabel;
+    actionBtn.className =
+      'font-semibold text-blue-400 hover:text-blue-300 transition-colors';
+    actionBtn.onclick = () => {
+      onAction();
+      dismiss();
+    };
+    controls.appendChild(actionBtn);
+  }
+
+  const closeBtn = document.createElement('button');
+  closeBtn.type = 'button';
+  closeBtn.setAttribute('aria-label', 'Tutup notifikasi');
+  closeBtn.className = 'text-slate-500 hover:text-slate-300 transition-colors';
+  closeBtn.innerHTML = ICON_CLOSE_SM;
+  closeBtn.onclick = dismiss;
+  controls.appendChild(closeBtn);
+
+  toast.appendChild(text);
+  toast.appendChild(controls);
+  toastContainer.appendChild(toast);
+
+  requestAnimationFrame(() => {
+    toast.classList.remove('opacity-0', 'translate-y-2');
+  });
+
+  const timer = setTimeout(dismiss, duration);
+}
 
 function iconButton(
   icon: string,
@@ -250,7 +331,7 @@ function renderEditForm(li: HTMLLIElement, todo: Todo): void {
       editingId = null;
       renderTodos();
     } catch (error) {
-      if (error instanceof Error) alert(error.message);
+      if (error instanceof Error) showToast({ message: error.message, type: 'error' });
     }
   };
 
@@ -345,10 +426,17 @@ function renderTodoRow(li: HTMLLIElement, todo: Todo): void {
     'bg-rose-600 hover:bg-rose-500'
   );
   deleteBtn.onclick = () => {
-    if (confirm(`Hapus tugas: "${todo.title}"?`)) {
-      app.deleteTodo(todo.id);
-      renderTodos();
-    }
+    app.deleteTodo(todo.id);
+    if (editingId === todo.id) editingId = null;
+    renderTodos();
+    showToast({
+      message: `Tugas "${todo.title}" dihapus`,
+      actionLabel: 'Urungkan',
+      onAction: () => {
+        app.restoreTodo(todo);
+        renderTodos();
+      },
+    });
   };
 
   actionDiv.appendChild(toggleBtn);
@@ -396,18 +484,26 @@ todoForm.addEventListener('submit', (event: Event) => {
     renderTodos();
   } catch (error) {
     if (error instanceof Error) {
-      alert(error.message);
+      showToast({ message: error.message, type: 'error' });
     }
   }
 });
 
 clearAllBtn.addEventListener('click', () => {
-  if (app.getTodos().length === 0) return;
-  if (confirm('Hapus semua tugas? Tindakan ini tidak bisa dibatalkan.')) {
-    app.clearAll();
-    editingId = null;
-    renderTodos();
-  }
+  const snapshot = app.getTodos().slice();
+  if (snapshot.length === 0) return;
+  app.clearAll();
+  editingId = null;
+  renderTodos();
+  showToast({
+    message: `${snapshot.length} tugas dihapus`,
+    actionLabel: 'Urungkan',
+    duration: 5000,
+    onAction: () => {
+      app.restoreAll(snapshot);
+      renderTodos();
+    },
+  });
 });
 
 filterTabs.addEventListener('click', (event: Event) => {
