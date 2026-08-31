@@ -166,6 +166,11 @@ class TodoList {
     return this.history;
   }
 
+  clearHistory(): void {
+    this.history = [];
+    localStorage.removeItem('riwayat_tugas');
+  }
+
   private validateTitle(title: string): string {
     if (!title || title.trim() === '') {
       throw new Error('Judul tugas tidak boleh kosong');
@@ -270,6 +275,9 @@ const monthListElement = document.getElementById(
 const historyListElement = document.getElementById(
   'history-list'
 ) as HTMLDivElement;
+const clearHistoryBtn = document.getElementById(
+  'clear-history-btn'
+) as HTMLButtonElement;
 
 const ICON_CHECK =
   '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
@@ -348,6 +356,100 @@ function showToast(options: ToastOptions): void {
   });
 
   const timer = setTimeout(dismiss, duration);
+}
+
+interface TypeConfirmOptions {
+  title: string;
+  description: string;
+  confirmPhrase: string;
+  confirmLabel: string;
+  onConfirm: () => void;
+}
+
+function showTypeConfirmModal(options: TypeConfirmOptions): void {
+  const { title, description, confirmPhrase, confirmLabel, onConfirm } = options;
+
+  const overlay = document.createElement('div');
+  overlay.className =
+    'fixed inset-0 z-40 flex items-center justify-center bg-black/60 p-4';
+
+  const card = document.createElement('div');
+  card.className =
+    'w-full max-w-sm bg-slate-900 border border-slate-700 rounded-xl p-5 shadow-2xl';
+
+  const titleEl = document.createElement('h3');
+  titleEl.textContent = title;
+  titleEl.className = 'text-lg font-bold text-white mb-1';
+
+  const descEl = document.createElement('p');
+  descEl.className = 'text-sm text-slate-400 mb-4';
+  descEl.innerHTML = `${description} Ketik <span class="font-mono text-rose-400">"${confirmPhrase}"</span> untuk lanjut.`;
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.placeholder = confirmPhrase;
+  input.autocomplete = 'off';
+  input.className =
+    'w-full px-3 py-2 mb-4 bg-slate-800 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 text-white placeholder-slate-600';
+
+  const btnRow = document.createElement('div');
+  btnRow.className = 'flex justify-end gap-2';
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.type = 'button';
+  cancelBtn.textContent = 'Batal';
+  cancelBtn.className =
+    'px-4 py-2 rounded-lg text-sm font-semibold text-slate-300 hover:bg-slate-800 transition-colors';
+
+  const confirmBtn = document.createElement('button');
+  confirmBtn.type = 'button';
+  confirmBtn.textContent = confirmLabel;
+  confirmBtn.disabled = true;
+
+  const updateConfirmBtn = () => {
+    const isMatch = input.value.trim().toLowerCase() === confirmPhrase.toLowerCase();
+    confirmBtn.disabled = !isMatch;
+    confirmBtn.className = `px-4 py-2 rounded-lg text-sm font-semibold bg-rose-600 text-white transition-colors ${
+      isMatch ? 'hover:bg-rose-500' : 'opacity-40 cursor-not-allowed'
+    }`;
+  };
+  updateConfirmBtn();
+
+  const close = () => {
+    overlay.remove();
+    document.removeEventListener('keydown', onKeydown);
+  };
+
+  function onKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Escape') close();
+    if (event.key === 'Enter' && !confirmBtn.disabled) {
+      onConfirm();
+      close();
+    }
+  }
+
+  input.addEventListener('input', updateConfirmBtn);
+  document.addEventListener('keydown', onKeydown);
+
+  cancelBtn.onclick = close;
+  overlay.addEventListener('click', (event) => {
+    if (event.target === overlay) close();
+  });
+  confirmBtn.onclick = () => {
+    if (confirmBtn.disabled) return;
+    onConfirm();
+    close();
+  };
+
+  btnRow.appendChild(cancelBtn);
+  btnRow.appendChild(confirmBtn);
+  card.appendChild(titleEl);
+  card.appendChild(descEl);
+  card.appendChild(input);
+  card.appendChild(btnRow);
+  overlay.appendChild(card);
+  document.body.appendChild(overlay);
+  input.focus();
 }
 
 function iconButton(
@@ -708,6 +810,22 @@ clearAllBtn.addEventListener('click', () => {
     onAction: () => {
       app.restoreAll(snapshot);
       renderTodos();
+    },
+  });
+});
+
+clearHistoryBtn.addEventListener('click', () => {
+  if (app.getHistory().length === 0) return;
+  showTypeConfirmModal({
+    title: 'Hapus Riwayat?',
+    description:
+      'Semua catatan tugas selesai & dihapus akan hilang permanen dan tidak bisa dikembalikan.',
+    confirmPhrase: 'udah selesai',
+    confirmLabel: 'Hapus Riwayat',
+    onConfirm: () => {
+      app.clearHistory();
+      renderTodos();
+      showToast({ message: 'Riwayat dihapus' });
     },
   });
 });
