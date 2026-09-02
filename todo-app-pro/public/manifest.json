@@ -1,0 +1,18 @@
+{
+  "name": "ToDo List — Catat & Kelola Tugasmu",
+  "short_name": "ToDo List",
+  "description": "Aplikasi to-do list simpel untuk mencatat dan mengelola tugas harianmu.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#020617",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
